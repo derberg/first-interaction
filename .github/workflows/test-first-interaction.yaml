@@ -39,8 +39,8 @@ jobs:
           if (isIssue) {
               console.log(`Adding message: ${message} to issue #${issueOrPullRequest.number}`);
               await github.issues.createComment({
-                  owner: issueOrPullRequest.owner,
-                  repo: issueOrPullRequest.repo,
+                  owner: context.payload.repository.owner.login,
+                  repo: context.payload.repository.name,
                   issue_number: issueOrPullRequest.number,
                   body: message
               });
@@ -48,8 +48,8 @@ jobs:
           else {
               console.log(`Adding message: ${message} to pull request #${issueOrPullRequest.number}`);
               await github.pulls.createReview({
-                  owner: issueOrPullRequest.owner,
-                  repo: issueOrPullRequest.repo,
+                  owner: context.payload.repository.owner.login,
+                  repo: context.payload.repository.name,
                   pull_number: issueOrPullRequest.number,
                   body: message,
                   event: 'COMMENT'
