@@ -4,7 +4,6 @@ An action for filtering pull requests and issues from first-time contributors.
 
 # Usage
 
-
 See [action.yml](action.yml)
 
 ```yaml
