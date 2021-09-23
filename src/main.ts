@@ -43,7 +43,6 @@ async function run() {
         client,
         issue.owner,
         issue.repo,
-        sender,
         issue.number
       );
     } else {
@@ -51,7 +50,6 @@ async function run() {
         client,
         issue.owner,
         issue.repo,
-        sender,
         issue.number
       );
     }
@@ -96,75 +94,48 @@ async function isFirstIssue(
   client: github.GitHub,
   owner: string,
   repo: string,
-  sender: string,
   curIssueNumber: number
 ): Promise<boolean> {
-  const {status, data: issues} = await client.issues.listForRepo({
-    owner: owner,
-    repo: repo,
-    creator: sender,
-    state: 'all'
-  });
-
-  if (status !== 200) {
-    throw new Error(`Received unexpected API status code ${status}`);
-  }
-
-  if (issues.length === 0) {
+  console.log('Checking...');
+  const query = `query {
+    repository(owner:${owner}, name:${repo}){
+      issue(number: ${curIssueNumber}){
+        nodes{
+          authorAssociation
+        }
+      }
+    }
+  }`;
+  const {data: { repository: { issue: { nodes: {authorAssociation} } } } } = await client.graphql(query);
+  console.log(`authorAssociation is: ${authorAssociation}`);
+  if(authorAssociation === "FIRST_TIME_CONTRIBUTOR"){
     return true;
   }
-
-  for (const issue of issues) {
-    if (issue.number < curIssueNumber && !issue.pull_request) {
-      return false;
-    }
-  }
-
-  return true;
+  return false;
 }
 
-// No way to filter pulls by creator
 async function isFirstPull(
   client: github.GitHub,
   owner: string,
   repo: string,
-  sender: string,
   curPullNumber: number,
-  page: number = 1
 ): Promise<boolean> {
-  // Provide console output if we loop for a while.
   console.log('Checking...');
-  const {status, data: pulls} = await client.pulls.list({
-    owner: owner,
-    repo: repo,
-    per_page: 100,
-    page: page,
-    state: 'all'
-  });
-
-  if (status !== 200) {
-    throw new Error(`Received unexpected API status code ${status}`);
-  }
-
-  if (pulls.length === 0) {
+  const query = `query {
+    repository(owner:${owner}, name:${repo}){
+      pullRequest(number: ${curPullNumber}){
+        nodes{
+          authorAssociation
+        }
+      }
+    }
+  }`;
+  const { data: { repository: { pullRequest: { nodes: {authorAssociation} } } } } = await client.graphql(query);
+  console.log(`authorAssociation is: ${authorAssociation}`);
+  if(authorAssociation === "FIRST_TIME_CONTRIBUTOR"){
     return true;
   }
-
-  for (const pull of pulls) {
-    const login: string = pull.user.login;
-    if (login === sender && pull.number < curPullNumber) {
-      return false;
-    }
-  }
-
-  return await isFirstPull(
-    client,
-    owner,
-    repo,
-    sender,
-    curPullNumber,
-    page + 1
-  );
+  return false;
 }
 
 run();
