@@ -126,7 +126,9 @@ async function isFirstPull(
       }
     }
   }`;
-  const { data: { repository: { pullRequest: {authorAssociation} } } } = await client.graphql(query);
+  const queryResult = await client.graphql(query);
+  console.log(queryResult);
+  const { data: { repository: { pullRequest: {authorAssociation} } } } = queryResult;
   console.log(`authorAssociation is: ${authorAssociation}`);
   if(authorAssociation === "FIRST_TIME_CONTRIBUTOR"){
     return true;
