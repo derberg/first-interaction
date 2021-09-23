@@ -29,7 +29,7 @@ jobs:
           if (!issueOrPullRequest) {
               throw new Error('This action should be triggered by an issue or a pull request.');
           }
-          const isFirstContribution = issueOrPullRequest.author_association === "FIRST_TIME_CONTRIBUTOR";
+          const isFirstContribution = issueOrPullRequest.author_association === "FIRST_TIME_CONTRIBUTOR" || issueOrPullRequest.author_association === "NONE";
           if (!isFirstContribution) {
               console.log(`Not the users first contribution. users association is: ${issueOrPullRequest.author_association}`);
               return;
