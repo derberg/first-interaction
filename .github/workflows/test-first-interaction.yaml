@@ -12,6 +12,8 @@ jobs:
   welcome:
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
     - uses: ./
       with:
         repo-token: ${{ secrets.TOKEN_GITHUB }}
