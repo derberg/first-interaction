@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-
+import { GitHub } from '@actions/github/lib/utils'
 async function run() {
   try {
     const issueMessage: string = core.getInput('issue-message');
@@ -11,7 +11,7 @@ async function run() {
       );
     }
     // Get client and context
-    const client: github.GitHub = new github.GitHub(
+    const client: InstanceType<typeof GitHub> = github.getOctokit(
       core.getInput('repo-token', {required: true})
     );
     const context = github.context;
@@ -69,14 +69,14 @@ async function run() {
     // Add a comment to the appropriate place
     console.log(`Adding message: ${message} to ${issueType} ${issue.number}`);
     if (isIssue) {
-      await client.issues.createComment({
+      await client.rest.issues.createComment({
         owner: issue.owner,
         repo: issue.repo,
         issue_number: issue.number,
         body: message
       });
     } else {
-      await client.pulls.createReview({
+      await client.rest.pulls.createReview({
         owner: issue.owner,
         repo: issue.repo,
         pull_number: issue.number,
@@ -84,14 +84,14 @@ async function run() {
         event: 'COMMENT'
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     core.setFailed(error.message);
     return;
   }
 }
 
 async function isFirstIssue(
-  client: github.GitHub,
+  client: any,
   owner: string,
   repo: string,
   curIssueNumber: number
@@ -115,7 +115,7 @@ async function isFirstIssue(
 }
 
 async function isFirstPull(
-  client: github.GitHub,
+  client: InstanceType<typeof GitHub>,
   owner: string,
   repo: string,
   curPullNumber: number,
