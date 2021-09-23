@@ -100,13 +100,11 @@ async function isFirstIssue(
   const query = `query {
     repository(owner: "${owner}", name: "${repo}"){
       issue(number: ${curIssueNumber}){
-        nodes{
-          authorAssociation
-        }
+        authorAssociation
       }
     }
   }`;
-  const {data: { repository: { issue: { nodes: {authorAssociation} } } } } = await client.graphql(query);
+  const {data: { repository: { issue: {authorAssociation} } } } = await client.graphql(query);
   console.log(`authorAssociation is: ${authorAssociation}`);
   if(authorAssociation === "FIRST_TIME_CONTRIBUTOR"){
     return true;
@@ -124,13 +122,11 @@ async function isFirstPull(
   const query = `query {
     repository(owner: "${owner}", name: "${repo}"){
       pullRequest(number: ${curPullNumber}){
-        nodes{
-          authorAssociation
-        }
+        authorAssociation
       }
     }
   }`;
-  const { data: { repository: { pullRequest: { nodes: {authorAssociation} } } } } = await client.graphql(query);
+  const { data: { repository: { pullRequest: {authorAssociation} } } } = await client.graphql(query);
   console.log(`authorAssociation is: ${authorAssociation}`);
   if(authorAssociation === "FIRST_TIME_CONTRIBUTOR"){
     return true;
