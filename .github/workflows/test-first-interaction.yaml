@@ -31,7 +31,7 @@ jobs:
           }
           const isFirstContribution = issueOrPullRequest.author_association === "FIRST_TIME_CONTRIBUTOR";
           if (!isFirstContribution) {
-              console.log('Not the users first contribution');
+              console.log(`Not the users first contribution. users association is: ${issueOrPullRequest.author_association}`);
               return;
           }
           const message = isIssue ? issueMessage : prMessage;
