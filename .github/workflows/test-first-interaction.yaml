@@ -1,3 +1,6 @@
+#This action is centrally managed in https://github.com/asyncapi/.github/
+#Don't make changes to this file in this repo as they will be overwritten with changes made to the same file in above mentioned repo
+
 name: Welcome first time contributors
 
 on:
@@ -12,14 +15,49 @@ jobs:
   welcome:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    - uses: ./
+    - uses: actions/github-script@v3
       with:
-        repo-token: ${{ secrets.TOKEN_GITHUB }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
         issue-message: |
           Welcome to AsyncAPI. Thanks a lot for reporting your first issue. Please check out our [contributors guide](https://github.com/asyncapi/.github/blob/master/CONTRIBUTING.md) and the instructions about a [basic recommended setup](https://github.com/asyncapi/.github/blob/master/git-workflow.md) useful for opening a pull request.
           Keep in mind there are also other channels you can use to interact with AsyncAPI community. For more details check out [this issue](https://github.com/asyncapi/asyncapi/issues/115).
         pr-message: |
           Welcome to AsyncAPI. Thanks a lot for creating your first pull request. Please check out our [contributors guide](https://github.com/asyncapi/.github/blob/master/CONTRIBUTING.md) and the instructions about a [basic recommended setup](https://github.com/asyncapi/.github/blob/master/git-workflow.md) useful for opening a pull request.
           Keep in mind there are also other channels you can use to interact with AsyncAPI community. For more details check out [this issue](https://github.com/asyncapi/asyncapi/issues/115).
+        script: |
+          const issueMessage = core.getInput('issue-message');
+          const prMessage = core.getInput('pr-message');
+          if (!issueMessage && !prMessage) {
+              throw new Error('Action must have at least one of issue-message or pr-message set');
+          }
+          const isIssue = !!context.payload.issue;
+          const issueOrPullRequest = isIssue ? context.payload.issue : context.payload.pull_request;
+          if (!issueOrPullRequest) {
+              throw new Error('This action should be triggered by an issue or a pull request.');
+          }
+          const isFirstContribution = issueOrPullRequest.author_association === "FIRST_TIME_CONTRIBUTOR";
+          if (!isFirstContribution) {
+              console.log('Not the users first contribution');
+              return;
+          }
+          const message = isIssue ? issueMessage : prMessage;
+          // Add a comment to the appropriate place
+          if (isIssue) {
+              console.log(`Adding message: ${message} to issue #${issueOrPullRequest.number}`);
+              await github.issues.createComment({
+                  owner: issueOrPullRequest.owner,
+                  repo: issueOrPullRequest.repo,
+                  issue_number: issueOrPullRequest.number,
+                  body: message
+              });
+          }
+          else {
+              console.log(`Adding message: ${message} to pull request #${issueOrPullRequest.number}`);
+              await github.pulls.createReview({
+                  owner: issueOrPullRequest.owner,
+                  repo: issueOrPullRequest.repo,
+                  pull_number: issueOrPullRequest.number,
+                  body: message,
+                  event: 'COMMENT'
+              });
+          }
