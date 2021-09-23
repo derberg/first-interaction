@@ -84,7 +84,7 @@ async function run() {
         event: 'COMMENT'
       });
     }
-  } catch (error: any) {
+  } catch (error) {
     core.setFailed(error.message);
     return;
   }
@@ -98,7 +98,7 @@ async function isFirstIssue(
 ): Promise<boolean> {
   console.log('Checking...');
   const query = `query {
-    repository(owner:${owner}, name:${repo}){
+    repository(owner: "${owner}", name: "${repo}"){
       issue(number: ${curIssueNumber}){
         nodes{
           authorAssociation
@@ -122,7 +122,7 @@ async function isFirstPull(
 ): Promise<boolean> {
   console.log('Checking...');
   const query = `query {
-    repository(owner:${owner}, name:${repo}){
+    repository(owner: "${owner}", name: "${repo}"){
       pullRequest(number: ${curPullNumber}){
         nodes{
           authorAssociation
