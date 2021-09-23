@@ -15,7 +15,6 @@ async function run() {
       core.getInput('repo-token', {required: true})
     );
     const context = github.context;
-    console.log(JSON.stringify(context));
     if (context.payload.action !== 'opened') {
       console.log('No issue or PR was opened, skipping');
       return;
@@ -29,29 +28,12 @@ async function run() {
       );
       return;
     }
-
-    // Do nothing if its not their first contribution
-    console.log('Checking if its the users first contribution');
-    if (!context.payload.sender) {
-      throw new Error('Internal error, no sender provided by GitHub');
-    }
-    const sender: string = context.payload.sender!.login;
-    const issue: {owner: string; repo: string; number: number} = context.issue;
     let firstContribution: boolean = false;
+    let FIRST_LABEL = "FIRST_TIME_CONTRIBUTOR";
     if (isIssue) {
-      firstContribution = await isFirstIssue(
-        client,
-        issue.owner,
-        issue.repo,
-        issue.number
-      );
+      firstContribution = context.payload.issue?.author_association === FIRST_LABEL;
     } else {
-      firstContribution = await isFirstPull(
-        client,
-        issue.owner,
-        issue.repo,
-        issue.number
-      );
+      firstContribution = context.payload.pull_request?.author_association === FIRST_LABEL;
     }
     if (!firstContribution) {
       console.log('Not the users first contribution');
@@ -64,11 +46,13 @@ async function run() {
       console.log('No message provided for this type of contribution');
       return;
     }
-
-    const issueType: string = isIssue ? 'issue' : 'pull request';
     // Add a comment to the appropriate place
-    console.log(`Adding message: ${message} to ${issueType} ${issue.number}`);
     if (isIssue) {
+      const issue = context.payload.issue;
+      if(!issue){
+        return;
+      }
+      console.log(`Adding message: ${message} to issue ${issue.issue.number}`);
       await client.rest.issues.createComment({
         owner: issue.owner,
         repo: issue.repo,
@@ -76,10 +60,14 @@ async function run() {
         body: message
       });
     } else {
+      const pull_request = context.payload.pull_request;
+      if(!pull_request){
+        return;
+      }
       await client.rest.pulls.createReview({
-        owner: issue.owner,
-        repo: issue.repo,
-        pull_number: issue.number,
+        owner: pull_request.owner,
+        repo: pull_request.repo,
+        pull_number: pull_request.number,
         body: message,
         event: 'COMMENT'
       });
@@ -88,52 +76,6 @@ async function run() {
     core.setFailed(error.message);
     return;
   }
-}
-
-async function isFirstIssue(
-  client: any,
-  owner: string,
-  repo: string,
-  curIssueNumber: number
-): Promise<boolean> {
-  console.log('Checking...');
-  const query = `query {
-    repository(owner: "${owner}", name: "${repo}"){
-      issue(number: ${curIssueNumber}){
-        authorAssociation
-      }
-    }
-  }`;
-  const {data: { repository: { issue: {authorAssociation} } } } = await client.graphql(query);
-  console.log(`authorAssociation is: ${authorAssociation}`);
-  if(authorAssociation === "FIRST_TIME_CONTRIBUTOR"){
-    return true;
-  }
-  return false;
-}
-
-async function isFirstPull(
-  client: InstanceType<typeof GitHub>,
-  owner: string,
-  repo: string,
-  curPullNumber: number,
-): Promise<boolean> {
-  console.log('Checking...');
-  const query = `query {
-    repository(owner: "${owner}", name: "${repo}"){
-      pullRequest(number: ${curPullNumber}){
-        authorAssociation
-      }
-    }
-  }`;
-  const queryResult = await client.graphql(query);
-  console.log(queryResult);
-  const { data: { repository: { pullRequest: {authorAssociation} } } } = queryResult;
-  console.log(`authorAssociation is: ${authorAssociation}`);
-  if(authorAssociation === "FIRST_TIME_CONTRIBUTOR"){
-    return true;
-  }
-  return false;
 }
 
 run();
