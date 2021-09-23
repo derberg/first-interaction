@@ -15,7 +15,7 @@ async function run() {
       core.getInput('repo-token', {required: true})
     );
     const context = github.context;
-
+    console.log(JSON.stringify(context));
     if (context.payload.action !== 'opened') {
       console.log('No issue or PR was opened, skipping');
       return;
