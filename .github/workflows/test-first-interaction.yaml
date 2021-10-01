@@ -42,7 +42,7 @@ jobs:
             const { repository: { issues: { totalCount } } } = await github.graphql(query, variables);
             isFirstContribution = totalCount === 1;
           } else {
-              const query = `query($owner:String!, $name:String!, $number:Number!) {
+              const query = `query($owner:String!, $name:String!, $number:Int!) {
               repository(owner:$owner, name:$name){
                 pullRequest(number:$number){
                   authorAssociation
