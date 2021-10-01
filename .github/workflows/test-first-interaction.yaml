@@ -25,32 +25,63 @@ jobs:
               throw new Error('Action must have at least one of issue-message or pr-message set');
           }
           const isIssue = !!context.payload.issue;
-          const issueOrPullRequest = isIssue ? context.payload.issue : context.payload.pull_request;
-          if (!issueOrPullRequest) {
-              throw new Error('This action should be triggered by an issue or a pull request.');
+          let isFirstContribution;
+          if (isIssue) {
+              const query = `query($owner:String!, $name:String!, $contributer:String!) {
+              repository(owner:$owner, name:$name){
+                issues(last: 100, filterBy: {createdBy:$contributer}){
+                  totalCount
+                }
+              }
+            }`;
+            const variables = {
+              owner: context.repo.owner,
+              name: context.repo.repo,
+              contributer: context.payload.sender.login
+            };
+            const { repository: { issues: { totalCount } } } = await github.graphql(query, variables);
+            isFirstContribution = totalCount === 1;
+          } else {
+              const query = `query($owner:String!, $name:String!, $number:Number!) {
+              repository(owner:$owner, name:$name){
+                pullRequest(number:$number){
+                  authorAssociation
+                }
+              }
+            }`;
+            const variables = {
+              owner: context.repo.owner,
+              name: context.repo.repo,
+              number: context.payload.pull_request.number
+            };
+            const { repository: { issues: { authorAssociation } } } = await github.graphql(query, variables);
+            isFirstContribution = authorAssociation === "FIRST_TIME_CONTRIBUTOR";
+
           }
-          const isFirstContribution = issueOrPullRequest.author_association === "FIRST_TIME_CONTRIBUTOR";
+          
           if (!isFirstContribution) {
-              console.log(`Not the users first contribution. users association is: ${issueOrPullRequest.author_association}`);
+              console.log(`Not the users first contribution.`);
               return;
           }
           const message = isIssue ? issueMessage : prMessage;
           // Add a comment to the appropriate place
           if (isIssue) {
-              console.log(`Adding message: ${message} to issue #${issueOrPullRequest.number}`);
+              const issueNumber = context.payload.issue.number;
+              console.log(`Adding message: ${message} to issue #${issueNumber}`);
               await github.issues.createComment({
                   owner: context.payload.repository.owner.login,
                   repo: context.payload.repository.name,
-                  issue_number: issueOrPullRequest.number,
+                  issue_number: issueNumber,
                   body: message
               });
           }
           else {
-              console.log(`Adding message: ${message} to pull request #${issueOrPullRequest.number}`);
+            const pullNumber = context.payload.pull_request.number;
+              console.log(`Adding message: ${message} to pull request #${pullNumber}`);
               await github.pulls.createReview({
                   owner: context.payload.repository.owner.login,
                   repo: context.payload.repository.name,
-                  pull_number: issueOrPullRequest.number,
+                  pull_number: pullNumber,
                   body: message,
                   event: 'COMMENT'
               });
