@@ -40,6 +40,7 @@ jobs:
               contributer: context.payload.sender.login
             };
             const { repository: { issues: { totalCount } } } = await github.graphql(query, variables);
+            console.log(`use opened ${totalCount} issues`);
             isFirstContribution = totalCount === 1;
           } else {
               const query = `query($owner:String!, $name:String!, $number:Int!) {
