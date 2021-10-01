@@ -55,6 +55,7 @@ jobs:
               number: context.payload.pull_request.number
             };
             const { repository: { pullRequest: { authorAssociation } } } = await github.graphql(query, variables);
+            console.log(`the authorAssociation is: ${authorAssociation}`);
             isFirstContribution = authorAssociation === "FIRST_TIME_CONTRIBUTOR";
 
           }
